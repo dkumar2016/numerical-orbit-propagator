@@ -32,6 +32,7 @@ def two_body_derivative(t, y, mu=MU_KM3_S2):
 # --- Main: hand check --------------------------------------------------------
 
 def main():
+    np.set_printoptions(precision=6, suppress=True)
     r_iss_km = R_EARTH_KM + 400.0
     v_circ_km_s = np.sqrt(MU_KM3_S2 / r_iss_km)
     y = np.array([r_iss_km, 0.0, 0.0, 0.0, v_circ_km_s, 0.0])
