@@ -75,4 +75,4 @@ next stage.
 ## Assumptions
 
 Point-mass Earth, no drag, no Sun/Moon, no solar radiation pressure,
-no thrust. Each is added later as a separate force.
+no thrust. Each is added later as a separate force
