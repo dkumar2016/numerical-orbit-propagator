@@ -2,3 +2,4 @@ numpy
 scipy
 matplotlib
 pytest
+orbit-state-vector-toolkit @ git+https://github.com/dkumar2016/orbit-state-vector-toolkit.git
