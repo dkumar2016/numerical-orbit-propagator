@@ -8,7 +8,7 @@ perturbations (starting with J2) as plug-in forces.
 
 - [x] Two-body equations of motion as a first-order state derivative, with tests
 - [x] Integrator comparison: Euler, RK4 and SciPy `solve_ivp` on a test problem
-- [ ] Orbit propagation from initial orbital elements, with 2-D/3-D plots
+- [x] Orbit propagation from initial orbital elements, with 2-D/3-D plots
 - [ ] Validation: energy and angular-momentum drift, comparison with Kepler, tolerance study
 - [ ] J2 perturbation as a plug-in force; RAAN drift checked against the analytic rate
 - [ ] Continuous integration (GitHub Actions running pytest)
@@ -52,25 +52,51 @@ next stage.
 ![Error vs step size](figures/integrator_error_vs_step.png)
 ![solve_ivp error vs cost](figures/solve_ivp_tolerance_sweep.png)
 
+
+## First numerical orbit
+
+`python -m examples.first_orbit` reads orbital elements from
+`data/initial_orbits.csv`, converts them to a state vector with
+`coe_to_rv` from [orbit-state-vector-toolkit](https://github.com/dkumar2016/orbit-state-vector-toolkit),
+and propagates with `solve_ivp` (DOP853, rtol 1e-10, atol 1e-12).
+
+ISS-like orbit (a = 6778 km, e = 0.0005, i = 51.64°), checked against hand
+calculations:
+
+| Check | Expected | Propagated |
+|---|---|---|
+| Period | 5553.5 s (92.56 min) | 5553.5 s |
+| Return to start after one period | 0 | 1.41 mm |
+| Radius range over one day | 6774.611 – 6781.389 km | 6774.611 – 6781.389 km |
+| Energy drift over one day | 0 | 2.6e-10 (relative) |
+| Orbit plane shift over one day | 0 | < 1e-6° |
+
+![Orbit in ECI](figures/iss_like_orbit_3d.png)
+![Altitude over one day](figures/iss_like_altitude.png)
+
 ## Structure
 
     propagator/
         constants.py            μ, Earth radius, paths (units in the names)
         dynamics.py             accelerations and the state derivative
-        integrators.py          fixed-step Euler and RK4
+        propagate.py            propagate(y0, duration_s, step_s): DOP853 wrapper
+        analysis.py             trajectory checks: energy, h, plane, closure
+        integrators.py          fixed-step Euler and RK4 (benchmark only)
         reference_problems.py   test problems with exact solutions
     benchmarks/
         oscillator_benchmark.py integrator accuracy and cost study
-    tests/
-        test_dynamics.py
-        test_integrators.py
-    figures/, output/           benchmark results
+    examples/
+        first_orbit.py          elements → propagation → CSV, figures, checks
+    data/                       initial orbits
+    tests/                      43 tests
+    figures/, output/           results
 
-## Run
+## Install and run
 
-    python -m propagator.dynamics             # hand check
-    python -m benchmarks.oscillator_benchmark # integrator study
-    python -m pytest -v                       # 27 tests
+    python -m pip install -r requirements.txt   # includes the toolkit from GitHub
+    python -m examples.first_orbit
+    python -m benchmarks.oscillator_benchmark
+    python -m pytest -v
 
 ## Assumptions
 
