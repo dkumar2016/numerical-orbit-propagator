@@ -30,11 +30,13 @@ def output_times(duration_s, step_s):
 
 # --- Propagation ---------------------------------------------------------------
 
-def propagate(y0, duration_s, step_s=60.0, mu=MU_KM3_S2, rtol=RTOL, atol=ATOL):
+def propagate(y0, duration_s, step_s=60.0, mu=MU_KM3_S2, rtol=RTOL, atol=ATOL,
+              return_nfev=False):
     """Propagate a state [x, y, z, vx, vy, vz] (km, km/s) under two-body gravity.
 
     Returns t with shape (n,) in seconds from the start, and Y with shape
     (n, 6): one row per output time (the transpose of solve_ivp's sol.y).
+    With return_nfev=True, also returns the number of calls to the derivative.
     """
     y0 = np.asarray(y0, dtype=float)
     if y0.shape != (6,):
@@ -44,4 +46,6 @@ def propagate(y0, duration_s, step_s=60.0, mu=MU_KM3_S2, rtol=RTOL, atol=ATOL):
                     rtol=rtol, atol=atol, t_eval=t_out, args=(mu,))
     if not sol.success:
         raise RuntimeError(f"Propagation failed: {sol.message}")
+    if return_nfev:
+        return sol.t, sol.y.T, sol.nfev
     return sol.t, sol.y.T

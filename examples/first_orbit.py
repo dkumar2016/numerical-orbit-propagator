@@ -16,7 +16,7 @@ from propagator.analysis import (
     angular_momentum, closure_error_km, max_relative_drift, plane_shift_deg,
     radius_km, specific_energy,
 )
-from propagator.constants import DATA_DIR, FIGURES_DIR, OUTPUT_DIR, R_EARTH_KM
+from propagator.constants import DATA_DIR, FIGURES_DIR, OUTPUT_DIR, R_EARTH_KM, DAY_S
 from propagator.orbits import initial_state, read_initial_orbits
 from propagator.propagate import propagate
 from toolkit.kepler import period_s
@@ -26,10 +26,9 @@ from toolkit.kepler import period_s
 ORBITS_CSV = DATA_DIR / "initial_orbits.csv"
 STATE_FIELDS = ["t_s", "x_km", "y_km", "z_km", "vx_km_s", "vy_km_s", "vz_km_s"]
 STEP_S = 60.0
-ONE_DAY_S = 86400.0
 
 
-# --- 2. Process ----------------------------------------------------------------
+# --- Process ----------------------------------------------------------------
 
 def physics_checks(orbit, Y_period, Y_day):
     a, e = orbit["a_km"], orbit["e"]
@@ -50,7 +49,7 @@ def run_orbit(orbit):
     y0 = initial_state(orbit)
     T = period_s(orbit["a_km"])
     t_period, Y_period = propagate(y0, T, STEP_S)
-    t_day, Y_day = propagate(y0, ONE_DAY_S, STEP_S)
+    t_day, Y_day = propagate(y0, DAY_S, STEP_S)
     return {
         "orbit": orbit, "y0": y0, "period_s": T,
         "t_period": t_period, "Y_period": Y_period,
@@ -59,7 +58,7 @@ def run_orbit(orbit):
     }
 
 
-# --- 3. Output -----------------------------------------------------------------
+# --- Output -----------------------------------------------------------------
 
 def write_ephemeris(t, Y, path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +121,7 @@ def plot_altitude(result, path):
     ax.axhline(c["r_apogee_hand_km"] - R_EARTH_KM, ls=":", color="gray", label="apogee (hand)")
     ax.set_xlabel("Time (h)")
     ax.set_ylabel("Altitude (km)")
-    ax.set_title(f"{name}: altitude over one day ({ONE_DAY_S / result['period_s']:.2f} orbits)")
+    ax.set_title(f"{name}: altitude over one day ({DAY_S / result['period_s']:.2f} orbits)")
     ax.grid(alpha=0.3)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
     fig.savefig(path, dpi=150, bbox_inches="tight")

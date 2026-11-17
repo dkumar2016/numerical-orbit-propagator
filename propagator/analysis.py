@@ -43,3 +43,20 @@ def plane_shift_deg(Y):
 def closure_error_km(Y):
     """Distance between the final and initial positions (km)."""
     return float(np.linalg.norm(Y[-1, :3] - Y[0, :3]))
+
+
+def ric_components(Y_ref, Y):
+    """Position of Y relative to Y_ref in the reference's RIC frame (km), shape (n, 3).
+
+    Columns: radial (along r), in-track (completes the set, ~ along v),
+    cross-track (along h = r x v). Same frame as RSW / RTN.
+    """
+    r, v = Y_ref[:, :3], Y_ref[:, 3:]
+    R_hat = r / np.linalg.norm(r, axis=1, keepdims=True)
+    h = np.cross(r, v)
+    C_hat = h / np.linalg.norm(h, axis=1, keepdims=True)
+    I_hat = np.cross(C_hat, R_hat)
+    d = Y[:, :3] - r
+    return np.column_stack((np.sum(d * R_hat, axis=1),
+                            np.sum(d * I_hat, axis=1),
+                            np.sum(d * C_hat, axis=1)))
