@@ -16,35 +16,20 @@ from propagator.analysis import (
     angular_momentum, closure_error_km, max_relative_drift, plane_shift_deg,
     radius_km, specific_energy,
 )
-from propagator.constants import FIGURES_DIR, OUTPUT_DIR, R_EARTH_KM, REPO_DIR
+from propagator.constants import DATA_DIR, FIGURES_DIR, OUTPUT_DIR, R_EARTH_KM
+from propagator.orbits import initial_state, read_initial_orbits
 from propagator.propagate import propagate
-from toolkit.conversions import coe_to_rv
 from toolkit.kepler import period_s
 
 # --- Settings ------------------------------------------------------------------
 
-ORBITS_CSV = REPO_DIR / "data" / "initial_orbits.csv"
-ELEMENT_FIELDS = ["a_km", "e", "i_deg", "raan_deg", "argp_deg", "nu_deg"]
+ORBITS_CSV = DATA_DIR / "initial_orbits.csv"
 STATE_FIELDS = ["t_s", "x_km", "y_km", "z_km", "vx_km_s", "vy_km_s", "vz_km_s"]
 STEP_S = 60.0
 ONE_DAY_S = 86400.0
 
 
-# --- 1. Read -------------------------------------------------------------------
-
-def read_initial_orbits(path):
-    """Return a list of {'name': str, 'a_km': float, ...} from the CSV."""
-    with open(path, newline="") as f:
-        return [{"name": row["name"], **{k: float(row[k]) for k in ELEMENT_FIELDS}}
-                for row in csv.DictReader(f)]
-
-
 # --- 2. Process ----------------------------------------------------------------
-
-def initial_state(orbit):
-    r, v = coe_to_rv(*(orbit[k] for k in ELEMENT_FIELDS))
-    return np.concatenate((r, v))
-
 
 def physics_checks(orbit, Y_period, Y_day):
     a, e = orbit["a_km"], orbit["e"]
