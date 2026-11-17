@@ -4,12 +4,41 @@ Numerical orbit propagator in Python: two-body equations of motion,
 integration with SciPy `solve_ivp`, validation against Kepler, and
 perturbations (starting with J2) as plug-in forces.
 
+
+
+## Accuracy
+
+Validated against the exact two-body solution (Kepler's equation, from
+[orbit-state-vector-toolkit](https://github.com/dkumar2016/orbit-state-vector-toolkit),
+which shares no code with the propagator). DOP853, rtol 1e-10, atol 1e-12:
+
+| Orbit | Position error after 1 day | After 10 days | Energy drift (10 days) |
+|---|---|---|---|
+| ISS-like (a 6778 km, e 0.0005) | 3.3 mm | 2.4 m | 6.5e-10 |
+| Molniya (a 26600 km, e 0.74) | 1.9 cm | 17 m | 4.0e-9 |
+
+- The error is almost entirely **in-track** (a timing error): radial stays at
+  millimetre level for the ISS-like orbit, and cross-track is ~1e-9 m.
+- The 10-day in-track error is predicted to within 9% (ISS-like) and 16%
+  (Molniya) from the measured energy drift, through energy → semi-major axis
+  → period → timing: 2.66 m predicted vs 2.43 m measured for the ISS-like orbit.
+- The Molniya error grows in steps at each perigee pass, where the satellite
+  is fastest and the path curves most sharply.
+- Numerical error is far below what operations need (conjunction screening
+  ~10 m, catalogue tracking ~1 km), so in practice accuracy is limited by the
+  force model, not the integrator.
+
+![Error vs exact solution, split into radial, in-track and cross-track](figures/validation_error_vs_time.png)
+![Error after one day vs tolerance and cost](figures/validation_tolerance_sweep.png)
+
+`python -m benchmarks.two_body_validation` reproduces every number above.
+
 ## Roadmap
 
 - [x] Two-body equations of motion as a first-order state derivative, with tests
 - [x] Integrator comparison: Euler, RK4 and SciPy `solve_ivp` on a test problem
 - [x] Orbit propagation from initial orbital elements, with 2-D/3-D plots
-- [ ] Validation: energy and angular-momentum drift, comparison with Kepler, tolerance study
+- [x] Validation: energy and angular-momentum drift, comparison with Kepler, tolerance study
 - [ ] J2 perturbation as a plug-in force; RAAN drift checked against the analytic rate
 - [ ] Continuous integration (GitHub Actions running pytest)
 
@@ -77,26 +106,29 @@ calculations:
 ## Structure
 
     propagator/
-        constants.py            μ, Earth radius, paths (units in the names)
+        constants.py            μ, Earth radius, DAY_S, paths (units in the names)
         dynamics.py             accelerations and the state derivative
         propagate.py            propagate(y0, duration_s, step_s): DOP853 wrapper
-        analysis.py             trajectory checks: energy, h, plane, closure
+        analysis.py             trajectory checks: energy, h, plane, closure, RIC
+        orbits.py               read initial orbits; elements → state vector
+        reference_problems.py   problems with exact solutions (incl. two-body Kepler)
         integrators.py          fixed-step Euler and RK4 (benchmark only)
-        reference_problems.py   test problems with exact solutions
     benchmarks/
         oscillator_benchmark.py integrator accuracy and cost study
+        two_body_validation.py  propagator vs exact Kepler solution
     examples/
         first_orbit.py          elements → propagation → CSV, figures, checks
-    data/                       initial orbits
-    tests/                      43 tests
+    data/                       initial orbits (ISS-like, Molniya)
+    tests/                      57 tests
     figures/, output/           results
 
 ## Install and run
 
     python -m pip install -r requirements.txt   # includes the toolkit from GitHub
-    python -m examples.first_orbit
-    python -m benchmarks.oscillator_benchmark
-    python -m pytest -v
+    python -m examples.first_orbit              # elements → orbit, figures
+    python -m benchmarks.oscillator_benchmark   # integrator choice
+    python -m benchmarks.two_body_validation    # accuracy vs exact solution
+    python -m pytest -v                         # 57 tests
 
 ## Assumptions
 
