@@ -45,7 +45,7 @@ def measured_order(step_sizes, errors):
     return float(slope)
 
 
-# --- 2. Process ----------------------------------------------------------------
+# --- Process ----------------------------------------------------------------
 
 def run_step_sweep():
     """Error after one period for each fixed-step method and step size."""
@@ -97,7 +97,7 @@ def orders_from(step_rows):
     return orders
 
 
-# --- 3. Output -----------------------------------------------------------------
+# --- Output -----------------------------------------------------------------
 
 def write_csv(rows, path):
     path.parent.mkdir(parents=True, exist_ok=True)
