@@ -83,3 +83,16 @@ def j2_raan_rate_deg_per_day(a_km, e, i_deg, mu=MU_KM3_S2, j2=J2, r_eq_km=R_EART
     p = a_km * (1 - e**2)
     rate_rad_s = -1.5 * n * j2 * (r_eq_km / p)**2 * np.cos(np.radians(i_deg))
     return float(np.degrees(rate_rad_s) * DAY_S)
+
+
+def per_orbit_max(t, values, period_s):
+    """Largest |value| in each complete orbit.
+
+    Returns (end time of each orbit, maximum in that orbit). Removes the
+    within-orbit oscillation so the long-term trend is easy to read.
+    """
+    n_orbits = int(t[-1] // period_s)
+    orbit_number = (t // period_s).astype(int)
+    ends = (np.arange(n_orbits) + 1) * period_s
+    maxima = np.array([np.abs(values[orbit_number == k]).max() for k in range(n_orbits)])
+    return ends, maxima
