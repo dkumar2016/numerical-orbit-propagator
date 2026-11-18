@@ -1,10 +1,10 @@
 # numerical-orbit-propagator
 
+[![tests](https://github.com/dkumar2016/numerical-orbit-propagator/actions/workflows/tests.yml/badge.svg)](https://github.com/dkumar2016/numerical-orbit-propagator/actions/workflows/tests.yml)
+
 Numerical orbit propagator in Python: two-body equations of motion,
 integration with SciPy `solve_ivp`, validation against Kepler, and
 perturbations (starting with J2) as plug-in forces.
-
-
 
 ## Accuracy
 
@@ -44,8 +44,8 @@ which shares no code with the propagator). DOP853, rtol 1e-10, atol 1e-12:
 - [x] Integrator comparison: Euler, RK4 and SciPy `solve_ivp` on a test problem
 - [x] Orbit propagation from initial orbital elements, with 2-D/3-D plots
 - [x] Validation: energy and angular-momentum drift, comparison with Kepler, tolerance study
-- [ ] J2 perturbation as a plug-in force; RAAN drift checked against the analytic rate
-- [ ] Continuous integration (GitHub Actions running pytest)
+- [x] J2 perturbation as a plug-in force; RAAN drift checked against the analytic rate
+- [x] Continuous integration (GitHub Actions running pytest)
 
 ## Equations of motion
 
@@ -56,15 +56,20 @@ Two-body relative motion with the satellite's mass neglected (μ = GM):
 Rewritten as six first-order equations for the integrator, with state
 y = [x, y, z, vx, vy, vz] (km, km/s, ECI):
 
-    ẏ = [ v ,  −μ r / r³ ]
+    ẏ = [ v ,  Σ a_k(t, r, v) ]
 
-`two_body_acceleration(r)` holds the physics; `two_body_derivative(t, y)`
-slices the state, calls the acceleration and stacks [v, a]. Keeping them
-separate lets further forces (J2, drag) be added as extra acceleration
-functions.
+Each force is a separate acceleration function, registered by name in
+`FORCES` in `dynamics.py`. `derivative(t, y, forces)` slices the state, adds
+up the accelerations of the forces listed and stacks [v, a]. A run chooses
+its force model by name:
+
+    propagate(y0, duration_s, step_s, forces=("two_body",))         # default
+    propagate(y0, duration_s, step_s, forces=("two_body", "j2"))
+
+Adding a force (drag, Sun/Moon) means writing one acceleration function and
+one line in `FORCES`; the integrator and the rest of the code do not change.
 
 Hand check: |a| = μ/r² = 8.676 m/s² at 400 km altitude (88% of g₀).
-
 
 ## Integrator benchmark
 
@@ -85,7 +90,6 @@ next stage.
 
 ![Error vs step size](figures/integrator_error_vs_step.png)
 ![solve_ivp error vs cost](figures/solve_ivp_tolerance_sweep.png)
-
 
 ## First numerical orbit
 
@@ -108,13 +112,58 @@ calculations:
 ![Orbit in ECI](figures/iss_like_orbit_3d.png)
 ![Altitude over one day](figures/iss_like_altitude.png)
 
+## J2 perturbation
+
+Earth is flattened: the equatorial radius is 21 km larger than the polar
+radius. The largest effect on an orbit comes from the second zonal harmonic,
+J2 = 1.0826e-3:
+
+    a_J2 = −(3/2) J2 μ R² / r⁵ · [ x(1 − 5z²/r²),  y(1 − 5z²/r²),  z(3 − 5z²/r²) ]
+
+Hand check at 400 km altitude: 12.5 mm/s² inward over the equator, 25 mm/s²
+outward over the pole, about 1/700 of central gravity.
+
+The main long-term effect is that the orbit plane turns about Earth's axis
+(regression of the node). First-order theory gives
+
+    dΩ/dt = −(3/2) n J2 (R/p)² cos i
+
+`python -m examples.j2_vs_two_body` propagates each orbit for 10 days with
+and without J2 from the same initial state, fits the RAAN drift and compares
+it with this formula:
+
+| Orbit | RAAN rate, propagated | Analytic | Difference | Two-body (no J2) |
+|---|---|---|---|---|
+| ISS-like (i 51.64°) | −5.020 °/day | −4.998 °/day | 0.43% | ~1e-13 °/day |
+| Molniya (i 63.4°) | −0.1456 °/day | −0.1472 °/day | −1.0% | ~1e-14 °/day |
+
+- The propagated rate matches theory within about 1%. The remaining gap is
+  expected: the propagator measures the instantaneous (osculating) node, while
+  the formula uses averaged (mean) elements.
+- Without J2 the node does not move (drift ~1e-13 °/day), so the drift comes
+  from the J2 force alone and not from numerical error.
+- A test checks the propagated rate against the formula for every orbit in
+  `data/initial_orbits.csv` (within 2%).
+
+![RAAN drift: two-body, J2 and analytic](figures/j2_raan_drift.png)
+![ISS-like orbit plane after 0, 5 and 10 days, without and with J2](figures/iss_like_j2_plane_rotation.png)
+
+**Why J2 matters:** ignoring it, a two-body prediction from the same initial
+state is about **1,100 km** off after one day for the ISS-like orbit (mostly
+in-track, ≈2.4 min in timing) and about **6,200 km** for the Molniya. After
+10 days the gap reaches about 9,800 km and 35,000 km. That is a hundred
+thousand times larger than the numerical error above, so any operational
+prediction must include J2.
+
+![Separation between the two-body and J2 predictions, largest value in each orbit](figures/two_body_error_from_ignoring_j2.png)
+
 ## Structure
 
     propagator/
-        constants.py            μ, Earth radius, DAY_S, paths (units in the names)
-        dynamics.py             accelerations and the state derivative
-        propagate.py            propagate(y0, duration_s, step_s): DOP853 wrapper
-        analysis.py             trajectory checks: energy, h, plane, closure, RIC
+        constants.py            μ, Earth radius, J2, DAY_S, paths (units in the names)
+        dynamics.py             accelerations (two-body, J2), FORCES registry, derivative
+        propagate.py            propagate(y0, duration_s, step_s, forces): DOP853 wrapper
+        analysis.py             trajectory checks: energy, h, plane, closure, RIC, RAAN drift
         orbits.py               read initial orbits; elements → state vector
         reference_problems.py   problems with exact solutions (incl. two-body Kepler)
         integrators.py          fixed-step Euler and RK4 (benchmark only)
@@ -123,19 +172,23 @@ calculations:
         two_body_validation.py  propagator vs exact Kepler solution
     examples/
         first_orbit.py          elements → propagation → CSV, figures, checks
+        j2_vs_two_body.py       RAAN drift vs analytic; cost of ignoring J2
     data/                       initial orbits (ISS-like, Molniya)
-    tests/                      57 tests
+    tests/                      74 tests
     figures/, output/           results
+    .github/workflows/          CI: runs the tests on every push
 
 ## Install and run
 
     python -m pip install -r requirements.txt   # includes the toolkit from GitHub
     python -m examples.first_orbit              # elements → orbit, figures
+    python -m examples.j2_vs_two_body           # J2: RAAN drift, separation
     python -m benchmarks.oscillator_benchmark   # integrator choice
     python -m benchmarks.two_body_validation    # accuracy vs exact solution
-    python -m pytest -v                         # 57 tests
+    python -m pytest -v                         # 74 tests
 
 ## Assumptions
 
-Point-mass Earth, no drag, no Sun/Moon, no solar radiation pressure,
-no thrust. Each is added later as a separate force
+Earth's gravity is a point mass plus, optionally, J2 (higher harmonics
+ignored). No drag, no Sun/Moon, no solar radiation pressure, no thrust.
+Each is added later as a separate force.
