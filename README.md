@@ -18,7 +18,8 @@ which shares no code with the propagator). DOP853, rtol 1e-10, atol 1e-12:
 | Molniya (a 26600 km, e 0.74) | 2.1 cm | 15 m | 3.7e-9 |
 
 - The error is almost entirely **in-track** (a timing error): radial stays at
-  millimetre level for the ISS-like orbit, and cross-track is below 1e-7 m.
+  millimetre level for the ISS-like orbit, and cross-track is below 1e-7 m or 
+  less (floating-point round-off, since a central force cannot move the orbit plane).
 - The 10-day in-track error is predicted from the measured energy drift,
   through energy → semi-major axis → period → timing: 2.66 m predicted vs
   2.43 m measured for the ISS-like orbit (within 10%), and 17.8 m vs 14.8 m
@@ -26,9 +27,8 @@ which shares no code with the propagator). DOP853, rtol 1e-10, atol 1e-12:
 - The Molniya error peaks at every perigee pass. The timing error grows smoothly, but near perigee
   the satellite moves about 7× faster than at apogee (10 vs 1.5 km/s), so the same timing error
   becomes a larger distance. The 10-day value falls on a perigee peak.
-- Numerical error is far below what operations need (conjunction screening
-  ~10 m, catalogue tracking ~1 km), so in practice accuracy is limited by the
-  force model, not the integrator.
+- Numerical error is far below the uncertainty in real orbit predictions (metres to kilometres), 
+  so in practice accuracy is limited by the force model, not the integrator.
 - Exact values vary slightly between platforms and library versions (the
   Molniya 10-day error was 15–17 m in testing), because tiny floating-point
   differences change the adaptive step sequence. The size and pattern of the
