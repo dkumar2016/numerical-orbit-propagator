@@ -7,7 +7,7 @@ Forces are plug-ins: each is listed by name in FORCES.
 
 import numpy as np
 
-from propagator.constants import MU_KM3_S2, R_EARTH_KM
+from propagator.constants import J2, MU_KM3_S2, R_EARTH_KM
 
 
 # --- Accelerations -----------------------------------------------------------
@@ -19,6 +19,16 @@ def two_body_acceleration(r, mu=MU_KM3_S2):
         raise ValueError("Position is at Earth's centre: acceleration undefined.")
     return -mu * r / r_mag**3
 
+def j2_acceleration(r, mu=MU_KM3_S2, j2=J2, r_eq_km=R_EARTH_KM):
+    """Acceleration (km/s^2) from Earth's equatorial bulge (J2), ECI position r (km)."""
+    x, y, z = r
+    r_mag = np.linalg.norm(r)
+    factor = -1.5 * j2 * mu * r_eq_km**2 / r_mag**5
+    z2_r2 = z**2 / r_mag**2
+    return factor * np.array([x * (1 - 5 * z2_r2),
+                              y * (1 - 5 * z2_r2),
+                              z * (3 - 5 * z2_r2)])
+
 
 # --- Force registry ------------------------------------------------------------
 # Every entry has the same call signature (t, r, v, mu) -> acceleration (km/s^2),
@@ -27,6 +37,7 @@ def two_body_acceleration(r, mu=MU_KM3_S2):
 
 FORCES = {
     "two_body": lambda t, r, v, mu: two_body_acceleration(r, mu),
+    "j2": lambda t, r, v, mu: j2_acceleration(r, mu),
 }
 DEFAULT_FORCES = ("two_body",)
 

@@ -5,7 +5,7 @@ All functions are vectorised: they work on every row at once.
 
 import numpy as np
 
-from propagator.constants import MU_KM3_S2
+from propagator.constants import DAY_S, J2, MU_KM3_S2, R_EARTH_KM
 
 
 def radius_km(Y):
@@ -60,3 +60,26 @@ def ric_components(Y_ref, Y):
     return np.column_stack((np.sum(d * R_hat, axis=1),
                             np.sum(d * I_hat, axis=1),
                             np.sum(d * C_hat, axis=1)))
+
+
+def raan_deg(Y):
+    """Right ascension of the ascending node (deg) at every time, unwrapped.
+
+    From the orbit normal h = r x v:  RAAN = atan2(h_x, -h_y).
+    Unwrapped so it changes smoothly past 0/360 deg.
+    """
+    h = angular_momentum(Y)
+    return np.degrees(np.unwrap(np.arctan2(h[:, 0], -h[:, 1])))
+
+
+def drift_rate_per_day(t, values):
+    """Slope of a straight-line fit of values against t (s), per day."""
+    return float(np.polyfit(t, values, 1)[0] * DAY_S)
+
+
+def j2_raan_rate_deg_per_day(a_km, e, i_deg, mu=MU_KM3_S2, j2=J2, r_eq_km=R_EARTH_KM):
+    """Analytic (secular) RAAN drift from J2:  -1.5 n J2 (R/p)^2 cos i, in deg/day."""
+    n = np.sqrt(mu / a_km**3)
+    p = a_km * (1 - e**2)
+    rate_rad_s = -1.5 * n * j2 * (r_eq_km / p)**2 * np.cos(np.radians(i_deg))
+    return float(np.degrees(rate_rad_s) * DAY_S)
