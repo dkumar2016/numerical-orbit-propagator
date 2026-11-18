@@ -8,7 +8,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from propagator.constants import MU_KM3_S2
-from propagator.dynamics import two_body_derivative
+from propagator.dynamics import DEFAULT_FORCES, check_forces, derivative
 
 METHOD = "DOP853"
 RTOL = 1e-10
@@ -30,9 +30,11 @@ def output_times(duration_s, step_s):
 
 # --- Propagation ---------------------------------------------------------------
 
-def propagate(y0, duration_s, step_s=60.0, mu=MU_KM3_S2, rtol=RTOL, atol=ATOL,
-              return_nfev=False):
-    """Propagate a state [x, y, z, vx, vy, vz] (km, km/s) under two-body gravity.
+def propagate(y0, duration_s, step_s=60.0, forces=DEFAULT_FORCES, mu=MU_KM3_S2,
+              rtol=RTOL, atol=ATOL, return_nfev=False):
+    """Propagate a state [x, y, z, vx, vy, vz] (km, km/s) under the chosen forces.
+
+    forces is a tuple of names from dynamics.FORCES, e.g. ("two_body", "j2").
 
     Returns t with shape (n,) in seconds from the start, and Y with shape
     (n, 6): one row per output time (the transpose of solve_ivp's sol.y).
@@ -41,9 +43,11 @@ def propagate(y0, duration_s, step_s=60.0, mu=MU_KM3_S2, rtol=RTOL, atol=ATOL,
     y0 = np.asarray(y0, dtype=float)
     if y0.shape != (6,):
         raise ValueError(f"State must have 6 elements, got shape {y0.shape}.")
+    forces = tuple(forces)
+    check_forces(forces)
     t_out = output_times(duration_s, step_s)
-    sol = solve_ivp(two_body_derivative, (0.0, duration_s), y0, method=METHOD,
-                    rtol=rtol, atol=atol, t_eval=t_out, args=(mu,))
+    sol = solve_ivp(derivative, (0.0, duration_s), y0, method=METHOD,
+                    rtol=rtol, atol=atol, t_eval=t_out, args=(forces, mu))
     if not sol.success:
         raise RuntimeError(f"Propagation failed: {sol.message}")
     if return_nfev:
