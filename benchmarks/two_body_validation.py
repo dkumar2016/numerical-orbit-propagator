@@ -29,7 +29,7 @@ RUN_DAYS = 10
 STEP_S = 120.0
 SWEEP_TOLERANCES = [1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12]
 ATOL_FACTOR = 1e-2                     # atol = rtol * ATOL_FACTOR in the sweep
-LOG_FLOOR_M = 1e-6                     # errors of exactly 0 cannot go on a log axis
+LOG_FLOOR_M = 1e-9                     # errors of exactly 0 cannot go on a log axis
 
 
 # --- Helpers -------------------------------------------------------------------

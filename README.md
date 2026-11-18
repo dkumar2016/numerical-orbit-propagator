@@ -23,8 +23,9 @@ which shares no code with the propagator). DOP853, rtol 1e-10, atol 1e-12:
   through energy → semi-major axis → period → timing: 2.66 m predicted vs
   2.43 m measured for the ISS-like orbit (within 10%), and 17.8 m vs 14.8 m
   for the Molniya (within 20%).
-- The Molniya error grows in steps at each perigee pass, where the satellite
-  is fastest and the path curves most sharply.
+- The Molniya error peaks at every perigee pass. The timing error grows smoothly, but near perigee
+  the satellite moves about 7× faster than at apogee (10 vs 1.5 km/s), so the same timing error
+  becomes a larger distance. The 10-day value falls on a perigee peak.
 - Numerical error is far below what operations need (conjunction screening
   ~10 m, catalogue tracking ~1 km), so in practice accuracy is limited by the
   force model, not the integrator.
